@@ -1,0 +1,30 @@
+[gd_resource type="SpriteFrames" load_steps=21 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/p2_attack/001.png" id="frame_p2_attack_1"]
+[ext_resource type="Texture2D" path="res://assets/p2_attack/002.png" id="frame_p2_attack_2"]
+[ext_resource type="Texture2D" path="res://assets/p2_attack/003.png" id="frame_p2_attack_3"]
+[ext_resource type="Texture2D" path="res://assets/p2_attack/004.png" id="frame_p2_attack_4"]
+[ext_resource type="Texture2D" path="res://assets/p2_attack/005.png" id="frame_p2_attack_5"]
+[ext_resource type="Texture2D" path="res://assets/p2_attack/006.png" id="frame_p2_attack_6"]
+[ext_resource type="Texture2D" path="res://assets/p2_attack/007.png" id="frame_p2_attack_7"]
+[ext_resource type="Texture2D" path="res://assets/p2_attack/008.png" id="frame_p2_attack_8"]
+[ext_resource type="Texture2D" path="res://assets/p2_attack/009.png" id="frame_p2_attack_9"]
+[ext_resource type="Texture2D" path="res://assets/p2_attack/010.png" id="frame_p2_attack_10"]
+[ext_resource type="Texture2D" path="res://assets/p2_attack/011.png" id="frame_p2_attack_11"]
+[ext_resource type="Texture2D" path="res://assets/p2_attack/012.png" id="frame_p2_attack_12"]
+[ext_resource type="Texture2D" path="res://assets/p2_attack/013.png" id="frame_p2_attack_13"]
+[ext_resource type="Texture2D" path="res://assets/p2_attack/014.png" id="frame_p2_attack_14"]
+[ext_resource type="Texture2D" path="res://assets/p2_attack/015.png" id="frame_p2_attack_15"]
+[ext_resource type="Texture2D" path="res://assets/p2_attack/016.png" id="frame_p2_attack_16"]
+[ext_resource type="Texture2D" path="res://assets/p2_attack/017.png" id="frame_p2_attack_17"]
+[ext_resource type="Texture2D" path="res://assets/p2_attack/018.png" id="frame_p2_attack_18"]
+[ext_resource type="Texture2D" path="res://assets/p2_attack/019.png" id="frame_p2_attack_19"]
+[ext_resource type="Texture2D" path="res://assets/p2_attack/020.png" id="frame_p2_attack_20"]
+
+[resource]
+animations = [{
+"frames": [ExtResource("frame_p2_attack_1"), ExtResource("frame_p2_attack_2"), ExtResource("frame_p2_attack_3"), ExtResource("frame_p2_attack_4"), ExtResource("frame_p2_attack_5"), ExtResource("frame_p2_attack_6"), ExtResource("frame_p2_attack_7"), ExtResource("frame_p2_attack_8"), ExtResource("frame_p2_attack_9"), ExtResource("frame_p2_attack_10"), ExtResource("frame_p2_attack_11"), ExtResource("frame_p2_attack_12"), ExtResource("frame_p2_attack_13"), ExtResource("frame_p2_attack_14"), ExtResource("frame_p2_attack_15"), ExtResource("frame_p2_attack_16"), ExtResource("frame_p2_attack_17"), ExtResource("frame_p2_attack_18"), ExtResource("frame_p2_attack_19"), ExtResource("frame_p2_attack_20")],
+"loop": true,
+"name": "attack",
+"speed": 24.0
+}]

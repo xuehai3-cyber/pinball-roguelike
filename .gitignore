@@ -1,0 +1,12 @@
+# Godot
+.godot/
+*.import
+*.translation
+export_presets.cfg
+
+# Build
+build/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,113 @@
+[gd_scene format=3 uid="uid://cor6l8mlodsn7"]
+
+[ext_resource type="Script" uid="uid://dxnxwryfsslr4" path="res://scenes/battle_ui.gd" id="1_4dp7r"]
+[ext_resource type="Texture2D" uid="uid://bxycm8vm83yh1" path="res://背景图.png" id="2_ja0t0"]
+[ext_resource type="Texture2D" path="res://assets/attack_icon.png" id="3_atk_icon"]
+[ext_resource type="Texture2D" path="res://assets/block_icon.png" id="4_blk_icon"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_qyamm"]
+bg_color = Color(0.7, 0.15, 0.15, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_kf0y4"]
+bg_color = Color(0.5, 0.1, 0.1, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ilr4f"]
+bg_color = Color(0.9, 0.2, 0.2, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_j4rna"]
+bg_color = Color(0.6, 0.45, 0.1, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8w2g8"]
+bg_color = Color(0.4, 0.3, 0.05, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_cy054"]
+bg_color = Color(0.75, 0.55, 0.1, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[node name="BattleUI" type="Control" unique_id=841955775]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_4dp7r")
+
+[node name="Background" type="TextureRect" parent="." unique_id=775067150]
+layout_mode = 0
+offset_left = -220.0
+offset_top = -127.0
+offset_right = 2724.0
+offset_bottom = 1521.0
+texture = ExtResource("2_ja0t0")
+
+[node name="Label" type="Label" parent="." unique_id=2019829775]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 0.4
+theme_override_colors/font_color = Color(1, 0.843, 0, 1)
+theme_override_font_sizes/font_size = 200
+text = "5"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Timer" type="Timer" parent="." unique_id=2115034175]
+autostart = true
+
+[node name="AttackBtn" type="Button" parent="." unique_id=1046214358]
+layout_mode = 0
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 80.0
+offset_top = -200.0
+offset_right = 380.0
+offset_bottom = -60.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 48
+theme_override_styles/normal = SubResource("StyleBoxFlat_qyamm")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_kf0y4")
+theme_override_styles/hover = SubResource("StyleBoxFlat_ilr4f")
+icon = ExtResource("3_atk_icon")
+text = "攻击"
+
+[node name="BlockBtn" type="Button" parent="." unique_id=1731229918]
+layout_mode = 0
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -380.0
+offset_top = -200.0
+offset_right = -80.0
+offset_bottom = -60.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 48
+theme_override_styles/normal = SubResource("StyleBoxFlat_j4rna")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_8w2g8")
+theme_override_styles/hover = SubResource("StyleBoxFlat_cy054")
+icon = ExtResource("4_blk_icon")
+text = "格挡"
