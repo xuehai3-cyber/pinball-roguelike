@@ -79,6 +79,12 @@ func _ready() -> void:
 
 	label.text = "按空格开始\n%s" % _hp_text()
 
+	# 加载中文字体（网页版需要）
+	var cjk_font := load("res://assets/simhei.ttf") as Font
+	label.add_theme_font_override("font", cjk_font)
+	atk_btn.add_theme_font_override("font", cjk_font)
+	blk_btn.add_theme_font_override("font", cjk_font)
+
 	_create_hp_bars()
 
 
