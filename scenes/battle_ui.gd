@@ -5,6 +5,8 @@ extends Control
 @onready var blk_btn: Button = $BlockBtn
 @onready var p1_sprite: AnimatedSprite2D = $P1Sprite
 @onready var p2_sprite: AnimatedSprite2D = $P2Sprite
+@onready var p1_status_label: Label = $"P1Status"
+@onready var p2_status_label: Label = $"P2Status"
 
 var p1_hp_segs: Array[TextureRect] = []
 var p2_hp_segs: Array[TextureRect] = []
@@ -30,6 +32,13 @@ const P2_SCALE := 1.3
 const P2_HURT_SCALE := 1.0
 const HP_BAR_W := 1050
 const HP_BAR_H := 150
+const FONT_CN := preload("res://assets/simhei.ttf")
+const PORT := 9000
+var is_host: bool = false
+var is_networked: bool = false
+var my_role: int = 0  # 1 or 2, assigned on connect
+var local_ready: bool = false
+var remote_ready: bool = false
 
 enum State { WAITING, COUNTDOWN, TELEPORT_IN, IMPACT, ANIMATE, SHOWING, TELEPORT_OUT, GAME_OVER }
 
@@ -71,34 +80,192 @@ func _ready() -> void:
 	p1_sprite.animation_finished.connect(_on_p1_anim_finished)
 	p2_sprite.animation_finished.connect(_on_p2_anim_finished)
 
-	atk_btn.text = "Q / O\n攻击"
-	blk_btn.text = "W / P\n格挡"
+	atk_btn.text = "Q\n攻击"
+	blk_btn.text = "W\n格挡"
 
 	_add_breathe(atk_btn, -8)
 	_add_breathe(blk_btn, -8)
 
-	label.text = "按空格开始\n%s" % _hp_text()
+	label.text = "按空格开始"
 
-	# 加载中文字体（网页版需要）
-	var ff := FontFile.new()
-	ff.font_data = load("res://assets/simhei.ttf")
-	ff.fixed_size = LABEL_FONT_SIZE
-	label.add_theme_font_override("font", ff)
-	atk_btn.add_theme_font_override("font", ff)
-	blk_btn.add_theme_font_override("font", ff)
+	# 加载中文字体
+	label.add_theme_font_override("font", FONT_CN)
+	atk_btn.add_theme_font_override("font", FONT_CN)
+	atk_btn.add_theme_font_size_override("font_size", 32)
+	blk_btn.add_theme_font_override("font", FONT_CN)
+	blk_btn.add_theme_font_size_override("font_size", 32)
 
 	_create_hp_bars()
+	_auto_host()
 
 
 func _create_hp_bars() -> void:
 	hp_full_tex = load("res://assets/hp_full.png") as Texture2D
 	hp_empty_tex = load("res://assets/hp_empty.png") as Texture2D
 
-	p1_hp_segs = _build_hp_bar(Vector2(80, 30))
-	p2_hp_segs = _build_hp_bar(Vector2(2560 - 80 - HP_BAR_W, 30))
+	const BAR_Y := 100.0
+	p1_hp_segs = _build_hp_bar(Vector2(80, BAR_Y))
+	p2_hp_segs = _build_hp_bar(Vector2(2560 - 80 - HP_BAR_W, BAR_Y))
+	_update_status_labels()
 	_update_hp_segments(p1_hp_segs, p1_hp)
 	_update_hp_segments(p2_hp_segs, p2_hp)
 
+
+
+# ========== 联网函数 ==========
+
+func _auto_host() -> void:
+	# 检查 URL 参数 ?join=IP:PORT，有就自动加入
+	var join_arg := OS.get_cmdline_user_args()
+	for arg in join_arg:
+		if arg.begins_with("--join=") or arg.begins_with("-j="):
+			var ip := arg.split("=")[1]
+			_join_game(ip)
+			return
+	# 网页版从 URL 参数读取
+	if OS.has_feature("web"):
+		var js_join: Variant = JavaScriptBridge.eval("new URLSearchParams(window.location.search).get('join')", true)
+		if js_join and str(js_join) != "null" and str(js_join) != "":
+			_join_game(str(js_join))
+			return
+	# 默认：创建房间
+	if OS.has_feature("web"):
+		_join_game()
+		return
+	_host_game()
+
+func _show_setup_screen() -> void:
+	pass
+
+func _hide_battle_ui() -> void:
+	pass
+
+func _show_battle_ui() -> void:
+	pass
+
+func _host_game() -> void:
+	var peer := WebSocketMultiplayerPeer.new()
+	var err := peer.create_server(PORT)
+	if err != OK:
+		label.text = "创建房间失败"
+		return
+	multiplayer.multiplayer_peer = peer
+	multiplayer.peer_connected.connect(_on_peer_connected)
+	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
+	is_host = true
+	is_networked = true
+	my_role = 1  # 房主固定 P1
+	_update_button_labels()
+	var ip_list := IP.get_local_addresses()
+	var local_ip := "127.0.0.1"
+	for ip in ip_list:
+		if ip.begins_with("192.168.") or ip.begins_with("10."):
+			local_ip = ip
+			break
+	label.text = "等待对手加入...
+本机 IP: %s" % local_ip
+
+func _join_game(addr: String = "127.0.0.1:9000") -> void:
+	var peer := WebSocketMultiplayerPeer.new()
+	var url := "ws://" + addr
+	var err := peer.create_client(url)
+	if err != OK:
+		label.text = "连接失败"
+		return
+	multiplayer.multiplayer_peer = peer
+	multiplayer.connected_to_server.connect(_on_connected_ok)
+	multiplayer.connection_failed.connect(_on_connection_failed)
+	label.text = "正在连接..."
+
+func _on_peer_connected(id: int) -> void:
+	label.text = "你是 P%d
+%s
+
+按空格准备" % [my_role, _role_keys()]
+	_show_battle_ui_impl()
+
+func _on_connected_ok() -> void:
+	is_networked = true
+	my_role = 2
+	_update_button_labels()
+	label.text = "你是 P%d
+%s
+
+按空格准备" % [my_role, _role_keys()]
+	_show_battle_ui_impl()
+
+func _on_connection_failed() -> void:
+	is_networked = false
+	multiplayer.multiplayer_peer = null
+	label.text = "连接失败"
+
+func _on_peer_disconnected(id: int) -> void:
+	is_networked = false
+	multiplayer.multiplayer_peer = null
+	label.text = "对手断开连接"
+
+func _role_keys() -> String:
+	return "Q/W = 攻击/格挡" if my_role == 1 else "O/P = 攻击/格挡"
+
+func _update_button_labels() -> void:
+	if my_role == 1:
+		atk_btn.text = "Q
+攻击"
+		blk_btn.text = "W
+格挡"
+	else:
+		atk_btn.text = "O
+攻击"
+		blk_btn.text = "P
+格挡"
+
+@rpc("authority", "reliable")
+func _rpc_assign_role(role: int) -> void:
+	my_role = role
+	_update_button_labels()
+
+func _ready_up() -> void:
+	if local_ready:
+		return
+	local_ready = true
+	rpc("_rpc_ready")
+	if remote_ready:
+		_start_round()
+		if is_host:
+			rpc("_rpc_start_round")
+	else:
+		label.text = "等待对手准备..."
+
+@rpc("any_peer", "reliable")
+func _rpc_ready() -> void:
+	remote_ready = true
+	if local_ready:
+		_start_round()
+		if is_host:
+			rpc("_rpc_start_round")
+
+func _reset_network() -> void:
+	if multiplayer.multiplayer_peer:
+		multiplayer.multiplayer_peer.close()
+		multiplayer.multiplayer_peer = null
+	is_host = false
+	is_networked = false
+	my_role = 0
+	local_ready = false
+	remote_ready = false
+	_auto_host()
+
+func _show_battle_ui_impl() -> void:
+	atk_btn.visible = true
+	blk_btn.visible = true
+
+
+func _update_status_labels() -> void:
+	var sudden := round_num >= 4
+	var b1 := "%d" % p1_blocks if not sudden else "—"
+	var b2 := "%d" % p2_blocks if not sudden else "—"
+	p1_status_label.text = "P1  HP:%d  格挡:%s" % [p1_hp, b1]
+	p2_status_label.text = "HP:%d  格挡:%s  P2" % [p2_hp, b2]
 
 func _build_hp_bar(pos: Vector2) -> Array[TextureRect]:
 	var segs: Array[TextureRect] = []
@@ -163,6 +330,8 @@ func _start_round() -> void:
 		_show_game_over()
 		return
 
+	local_ready = false
+	remote_ready = false
 	state = State.COUNTDOWN
 	countdown = COUNTDOWN_SECS
 	p1_choice = ""
@@ -202,6 +371,7 @@ func _reset_game() -> void:
 	result_text = ""
 	_update_hp_segments(p1_hp_segs, p1_hp)
 	_update_hp_segments(p2_hp_segs, p2_hp)
+	_update_status_labels()
 	_start_round()
 
 
@@ -218,7 +388,7 @@ func _show_game_over() -> void:
 		winner = "P2 获胜！"
 	else:
 		winner = "平局！"
-	label.text = "%s\n%s\n按空格重新开始" % [winner, _hp_text()]
+	label.text = "%s\n按空格重新开始" % winner
 
 
 func _process(delta: float) -> void:
@@ -245,7 +415,11 @@ func _input(event: InputEvent) -> void:
 
 		if state == State.GAME_OVER:
 			if event.keycode == KEY_SPACE:
-				_reset_game()
+				if is_networked and is_host:
+					_reset_game()
+					rpc("_rpc_start_round")
+				elif not is_networked:
+					_reset_game()
 			return
 
 		if state == State.SHOWING:
@@ -255,46 +429,67 @@ func _input(event: InputEvent) -> void:
 
 		if state == State.WAITING:
 			if event.keycode == KEY_SPACE:
-				_start_round()
+				if is_networked:
+					_ready_up()
+				else:
+					_start_round()
 			return
 
 	if state != State.COUNTDOWN or countdown <= 0:
 		return
 
 	if event is InputEventKey and event.pressed:
-		# 突然死亡（第4回合起）禁止格挡
 		var can_block := countdown > 2.0 and round_num < 4
 
-		# P1: Q=攻击  W=格挡
-		if p1_choice == "":
-			if event.keycode == KEY_Q:
-				_player_choose(1, "攻击")
-			elif event.keycode == KEY_W and can_block and p1_blocks > 0:
-				_player_choose(1, "格挡")
+		# 联网模式：按键由 my_role 决定
+		if is_networked:
+			var atk_key := KEY_Q if my_role == 1 else KEY_O
+			var blk_key := KEY_W if my_role == 1 else KEY_P
+			if event.keycode == atk_key:
+				_player_choose(0, "攻击")
+			elif event.keycode == blk_key and can_block:
+				var ok := (my_role == 1 and p1_blocks > 0) or (my_role == 2 and p2_blocks > 0)
+				if ok:
+					_player_choose(0, "格挡")
+		else:
+			# 本地双人
+			if p1_choice == "":
+				if event.keycode == KEY_Q:
+					_player_choose(1, "攻击")
+				elif event.keycode == KEY_W and can_block and p1_blocks > 0:
+					_player_choose(1, "格挡")
+			if p2_choice == "":
+				if event.keycode == KEY_O:
+					_player_choose(2, "攻击")
+				elif event.keycode == KEY_P and can_block and p2_blocks > 0:
+					_player_choose(2, "格挡")
 
-		# P2: O=攻击  P=格挡
-		if p2_choice == "":
-			if event.keycode == KEY_O:
-				_player_choose(2, "攻击")
-			elif event.keycode == KEY_P and can_block and p2_blocks > 0:
-				_player_choose(2, "格挡")
-
-		# 空格重置
 		if event.keycode == KEY_SPACE:
 			_start_round()
 
 
 func _player_choose(player: int, choice: String) -> void:
-	if player == 1:
-		p1_choice = choice
-		p1_press_time = countdown
+	if is_networked:
+		if my_role == 1:
+			p1_choice = choice
+			p1_press_time = countdown
+		else:
+			p2_choice = choice
+			p2_press_time = countdown
+		rpc("_rpc_send_choice", choice, countdown)
+		if p1_choice != "" and p2_choice != "":
+			countdown = 0
+			_resolve_round()
 	else:
-		p2_choice = choice
-		p2_press_time = countdown
-
-	if p1_choice != "" and p2_choice != "":
-		countdown = 0
-		_resolve_round()
+		if player == 1:
+			p1_choice = choice
+			p1_press_time = countdown
+		else:
+			p2_choice = choice
+			p2_press_time = countdown
+		if p1_choice != "" and p2_choice != "":
+			countdown = 0
+			_resolve_round()
 
 
 func _resolve_round() -> void:
@@ -447,7 +642,7 @@ func _on_both_anims_done() -> void:
 	if state == State.GAME_OVER:
 		return
 	state = State.SHOWING
-	label.text = "%s\n%s\n按空格继续" % [result_text, _hp_text()]
+	label.text = "%s\n按空格继续" % result_text
 
 
 func _on_p1_anim_finished() -> void:
@@ -484,7 +679,12 @@ func _on_teleport_back_done() -> void:
 	p1_sprite.scale = Vector2(P1_SCALE, P1_SCALE)
 	p2_sprite.scale = Vector2(P2_SCALE, P2_SCALE)
 	state = State.WAITING
-	label.text = "%s\n按空格开始" % _hp_text()
+	if is_networked and is_host:
+		label.text = "按空格开始"
+	elif is_networked:
+		label.text = "等待房主开始..."
+	else:
+		label.text = "按空格开始"
 
 
 func _calc_mult(press_time: float) -> float:
@@ -540,6 +740,7 @@ func _judge_round() -> void:
 	p2_hp = max(p2_hp, 0)
 	_update_hp_segments(p1_hp_segs, p1_hp)
 	_update_hp_segments(p2_hp_segs, p2_hp)
+	_update_status_labels()
 	round_num += 1
 
 	if p1_hp <= 0 or p2_hp <= 0 or round_num > MAX_ROUNDS:
@@ -554,3 +755,24 @@ func _add_breathe(btn: Button, offset_y: float) -> void:
 		.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 	tw.tween_property(btn, "position:y", base_y, 0.8) \
 		.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+
+
+# ========== RPC 函数 ==========
+
+@rpc("any_peer", "reliable")
+func _rpc_send_choice(choice: String, press_time: float) -> void:
+	var slot := 2 if my_role == 1 else 1
+	if slot == 1:
+		p1_choice = choice
+		p1_press_time = press_time
+	else:
+		p2_choice = choice
+		p2_press_time = press_time
+	if p1_choice != "" and p2_choice != "":
+		countdown = 0
+		_resolve_round()
+
+@rpc("authority", "reliable")
+func _rpc_start_round() -> void:
+	if not is_host:
+		_start_round()

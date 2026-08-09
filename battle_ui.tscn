@@ -4,6 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://bxycm8vm83yh1" path="res://背景图.png" id="2_kf0y4"]
 [ext_resource type="Texture2D" uid="uid://x6mdfes3wu7s" path="res://assets/attack_icon.png" id="3_atk_icon"]
 [ext_resource type="Texture2D" uid="uid://c5sir4jnm4a72" path="res://assets/block_icon.png" id="4_blk_icon"]
+[ext_resource type="FontFile" uid="uid://6sm7fukqmhdv" path="res://assets/simhei.ttf" id="5_8w2g8"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_qyamm"]
 bg_color = Color(0.7, 0.15, 0.15, 1)
@@ -117,3 +118,25 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_8w2g8")
 theme_override_styles/hover = SubResource("StyleBoxFlat_cy054")
 text = "格挡"
 icon = ExtResource("4_blk_icon")
+
+[node name="P1Status" type="Label" parent="." unique_id=925646452]
+layout_mode = 0
+offset_left = 240.0
+offset_top = 46.0
+offset_right = 800.0
+offset_bottom = 127.0
+theme_override_colors/font_color = Color(1, 1, 0, 1)
+theme_override_fonts/font = ExtResource("5_8w2g8")
+theme_override_font_sizes/font_size = 80
+text = "P1 HP:3 格挡:3"
+
+[node name="P2Status" type="Label" parent="." unique_id=204128956]
+layout_mode = 0
+offset_left = 1810.0
+offset_top = 46.0
+offset_right = 2410.0
+offset_bottom = 127.0
+theme_override_colors/font_color = Color(1, 1, 0, 1)
+theme_override_fonts/font = ExtResource("5_8w2g8")
+theme_override_font_sizes/font_size = 80
+text = "P2 HP:3 格挡:3 "
